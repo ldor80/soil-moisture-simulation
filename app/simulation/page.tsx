@@ -13,6 +13,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Card, CardContent } from "@/components/ui/card"
 import { Info, X } from "lucide-react"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import 'katex/dist/katex.min.css'
 import dynamic from 'next/dynamic'
 
@@ -307,7 +308,7 @@ export default function Simulation() {
                   boxShadow: cell.overrideTap ? '0 0 0 2px red inset' : 'none',
                 }}
                 onClick={() => handleCellClick(Math.floor(index / grid[0].length), index % grid[0].length)}
-                aria-label={`Cell ${Math.floor(index / grid[0].length)},${index % grid[0].length}. Moisture: ${formatMoisture(cell.moisture)}. Tap: ${cell.tapStatus ? 'On' : 'Off'}. Override: ${cell.overrideTap ? 'Yes' : 'No'}`}
+                aria-label={`Cell ${Math.floor(index / grid[0].length)},${index % grid[0].length}. Moisture: ${formatMoisture(cell.moisture)}. Tap: ${cell.tapStatus ? 'On' : 'Off'}. Override:  ${cell.overrideTap ? 'Yes' : 'No'}`}
               >
                 {displayValuesInCells && (
                   <span
@@ -384,15 +385,30 @@ export default function Simulation() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="units">Units</Label>
-            <Select value={units} onValueChange={setUnits}>
-              <SelectTrigger id="units">
-                <SelectValue placeholder="Select units" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="metric">Metric</SelectItem>
-                <SelectItem value="imperial">Imperial</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center space-x-2">
+              <Select value={units} onValueChange={setUnits}>
+                <SelectTrigger id="units">
+                  <SelectValue placeholder="Select units" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="metric">Metric</SelectItem>
+                  <SelectItem value="imperial">Imperial</SelectItem>
+                </SelectContent>
+              </Select>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Info className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Metric: mm/h for rates, cm for depth</p>
+                    <p>Imperial: in/h for rates, in for depth</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="moistureUnit">Moisture Unit</Label>
@@ -462,6 +478,40 @@ export default function Simulation() {
               <p>Tap Status: {grid[selectedCell.row][selectedCell.col].tapStatus ? 'On' : 'Off'}</p>
               <p>Override: {grid[selectedCell.row][selectedCell.col].overrideTap ? 'Yes' : 'No'}</p>
               <div className="space-y-4 mt-4">
+                <div>
+                  <Label htmlFor="manualMoisture">Set Moisture Manually</Label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="manualMoisture"
+                      type="number"
+                      min={0}
+                      max={moistureUnit === 'percentage' ? 100 : 0.5}
+                      step={moistureUnit === 'percentage' ? 1 : 0.01}
+                      value={moistureUnit === 'percentage' ? 
+                        (grid[selectedCell.row][selectedCell.col].moisture * 100).toFixed(0) : 
+                        (grid[selectedCell.row][selectedCell.col].moisture * 0.5).toFixed(3)
+                      }
+                      onChange={(e) => {
+                        const value = parseFloat(e.target.value)
+                        if (!isNaN(value)) {
+                          const newMoisture = moistureUnit === 'percentage' ? value / 100 : value / 0.5
+                          setGrid(prevGrid => {
+                            const newGrid = [...prevGrid]
+                            newGrid[selectedCell.row] = [...newGrid[selectedCell.row]]
+                            newGrid[selectedCell.row][selectedCell.col] = {
+                              ...newGrid[selectedCell.row][selectedCell.col],
+                              moisture: Math.min(1, Math.max(0, newMoisture)),
+                              overrideTap: true,
+                            }
+                            return newGrid
+                          })
+                        }
+                      }}
+                      className="w-20"
+                    />
+                    <span>{moistureUnit === 'percentage' ? '%' : 'm³/m³'}</span>
+                  </div>
+                </div>
                 <Button onClick={() => {
                   setGrid(prevGrid => {
                     const newGrid = [...prevGrid]
