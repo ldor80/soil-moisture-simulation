@@ -14,8 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Card, CardContent } from "@/components/ui/card"
 import { Info, X } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import 'katex/dist/katex.min.css'
 import dynamic from 'next/dynamic'
-import { useSettings } from '@/contexts/SettingsContext'
 
 const BlockMath = dynamic(() => import('react-katex').then((mod) => mod.BlockMath), { ssr: false })
 
@@ -66,7 +66,6 @@ const parameterFormulas: { [key in keyof SimulationParams]: string } = {
 
 export default function Simulation() {
   const searchParams = useSearchParams()
-  const { units, setUnits, moistureUnit, setMoistureUnit, colorScheme, setColorScheme, displayValuesInCells, setDisplayValuesInCells } = useSettings()
   const [grid, setGrid] = useState<Cell[][]>([])
   const [isRunning, setIsRunning] = useState(false)
   const [timeStep, setTimeStep] = useState(0)
@@ -79,6 +78,10 @@ export default function Simulation() {
   const [selectedCell, setSelectedCell] = useState<{ row: number; col: number } | null>(null)
   const [moistureHistory, setMoistureHistory] = useState<{ time: number; moisture: number }[]>([])
   const [showCellDetails, setShowCellDetails] = useState(false)
+  const [displayValuesInCells, setDisplayValuesInCells] = useState(false)
+  const [colorScheme, setColorScheme] = useState('default')
+  const [units, setUnits] = useState('metric')
+  const [moistureUnit, setMoistureUnit] = useState<'percentage' | 'volumetric'>('percentage')
   const [timeStepSize, setTimeStepSize] = useState(1) // Default to 1 hour
   const [openInfoPanel, setOpenInfoPanel] = useState<keyof SimulationParams | null>(null)
 
@@ -323,7 +326,6 @@ export default function Simulation() {
         )}
         {ColorLegend}
       </div>
-      
       <div>
         <h2 className="text-2xl font-bold mb-4">Controls</h2>
         <div className="space-y-4">
